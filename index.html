@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Paint</title>
+		<style>
+			* { margin: 0; padding: 0; box-sizing: border-box; }
+			html, body { background-color: #eee; }
+			.canvas-pixel {
+				width: 10px;
+				height: 10px;
+				background-color: #fff;
+				border-bottom: 1px solid #ddd;
+				border-right: 1px solid #ddd;
+				float: left;
+				cursor: pointer;
+			}
+			.canvas-row:first-child .canvas-pixel {
+				border-top: 1px solid #ddd;
+			}
+			.canvas-pixel:first-child {
+				border-left: 1px solid #ddd;
+			}
+			.canvas-row:after {
+				content: '';
+				display: table;
+				clear: both;
+			}
+			.canvas-pixel.nogrid {
+				border: none !important;
+			}
+			.canvas-pixel.black {
+				background-color: #000;
+			}
+			.grid {
+				background-color: #000;
+				color: #fff;
+				padding: 20px 40px;
+				font-family: Arial, sans-serif;
+				font-size: 14px;
+				cursor: pointer;
+				display: inline-block;
+				margin-top: 20px;
+				margin-left: 20px;
+			}
+			.pencil {
+				background-color: #999;
+				color: #fff;
+				padding: 20px 40px;
+				font-family: Arial, sans-serif;
+				font-size: 14px;
+				cursor: pointer;
+				display: inline-block;
+				margin-top: 20px;
+				margin-left: 20px;
+			}
+			.pencil.active {
+				background-color: #000;
+			}
+			.eraser {
+				background-color: #999;
+				color: #fff;
+				padding: 20px 40px;
+				font-family: Arial, sans-serif;
+				font-size: 14px;
+				cursor: pointer;
+				display: inline-block;
+				margin-top: 20px;
+				margin-left: 20px;
+			}
+			.eraser.active {
+				background-color: #000;
+			}
+			.clear {
+				background-color: #b00;
+				color: #fff;
+				padding: 20px 40px;
+				font-family: Arial, sans-serif;
+				font-size: 14px;
+				cursor: pointer;
+				display: inline-block;
+				margin-top: 20px;
+				margin-left: 20px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="canvas"></div>
+		<div class="grid">Toggle Grid</div>
+		<div class="pencil active">Pencil</div>
+		<div class="eraser">Eraser</div>
+		<div class="clear">Clear</div>
+		<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+		<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+		<script>
+			var socket = io();
+			$(document).ready(function() {
+				window.lastMouseX = 9999999;
+				window.lastMouseY = 9999999;
+				window.mouseX = 9999999;
+				window.mouseY = 9999999;
+				window.pixelBuffer = [];
+				window.paintColour = 1;
+				var numPixelsAcross = 64;
+				var numPixelsDown = 64;
+				for (var x = 0; x < numPixelsAcross; x++) {
+					var $row = $('<div class="canvas-row"></div>');
+					$('.canvas').append($row);
+					for (var y = 0; y < numPixelsAcross; y++) {
+						$row.append('<div class="canvas-pixel"></div>');
+					}
+				}
+				$('.grid').click(function() {
+					$('.canvas-pixel').toggleClass('nogrid');
+				});
+				$('.pencil').click(function() {
+					window.paintColour = 1;
+					$('.active').removeClass('active');
+					$('.pencil').addClass('active');
+				});
+				$('.eraser').click(function() {
+					window.paintColour = 0;
+					$('.active').removeClass('active');
+					$('.eraser').addClass('active');
+				});
+				$('.clear').click(function() {
+					if (confirm('Are you sure you want to clear the canvas?')) {
+						clearTimeout(window.sendPixelBufferTimeout);
+						socket.emit('clear', true);
+					}
+				});
+				$(document).mousemove(function(e) {
+					window.lastMouseX = window.mouseX;
+					window.lastMouseY = window.mouseY;
+					window.mouseX = e.pageX;
+					window.mouseY = e.pageY;
+					if (window.lastMouseX == 9999999) {
+						window.lastMouseX = window.mouseX;
+						window.lastMouseY = window.mouseY;
+					}
+					if (window.mouseDown) paintPixelLine();
+				});
+				$(document).mousedown(function() {
+					window.mouseDown = true;
+					paintPixel(window.mouseX, window.mouseY);
+				});
+				$(document).mouseup(function() {
+					window.mouseDown = false;
+				});
+				var paintPixelLine = function() {
+					var initX = window.lastMouseX;
+					var initY = window.lastMouseY;
+					var diffX = window.mouseX - window.lastMouseX;
+					var diffY = window.mouseY - window.lastMouseY;
+					var pixelDistance = Math.abs(diffX) + Math.abs(diffY);
+					var pointsDistance = pixelDistance / 10;
+					var lastX = -999;
+					var lastY = -999;
+					for (var i = 0; i < pointsDistance; i++) {
+						var x = initX + (diffX * (i / pointsDistance));
+						var y = initY + (diffY * (i / pointsDistance));
+						if (lastX != x || lastY != y) {
+							if (window.paintColour == 0) {
+								paintPixel(x, y+10);
+								paintPixel(x, y-10);
+								paintPixel(x+10, y);
+								paintPixel(x-10, y);
+								paintPixel(x, y+20);
+								paintPixel(x, y-20);
+								paintPixel(x+20, y);
+								paintPixel(x-20, y);
+								paintPixel(x+10, y+10);
+								paintPixel(x-10, y-10);
+								paintPixel(x+10, y-10);
+								paintPixel(x-10, y+10);
+								paintPixel(x+20, y+20);
+								paintPixel(x-20, y-20);
+								paintPixel(x+20, y-20);
+								paintPixel(x-20, y+20);
+								paintPixel(x+10, y+20);
+								paintPixel(x-10, y-20);
+								paintPixel(x+10, y-20);
+								paintPixel(x-10, y+20);
+								paintPixel(x+20, y+10);
+								paintPixel(x-20, y-10);
+								paintPixel(x+20, y-10);
+								paintPixel(x-20, y+10);
+							}
+							paintPixel(x, y);
+						}
+						lastX = x;
+						lastY = y;
+					}
+				}
+				var paintPixel = function(x, y) {
+					var canvas_width = $('.canvas').width();
+					var canvas_height = $('.canvas').height();
+					var pixel_width = $('.canvas-pixel').outerWidth();
+					var pixel_height = $('.canvas-pixel').outerHeight();
+					if (x <= canvas_width && y <= canvas_height) {
+						var pixel_x = Math.floor(x / pixel_width);
+						var pixel_y = Math.floor(y / pixel_height);
+						var $row = $('.canvas-row').eq(pixel_y);
+						var $pixel = $row.find('.canvas-pixel').eq(pixel_x);
+						if (window.paintColour == 1) {
+							$pixel.addClass('black');
+						} else if (window.paintColour == 0) {
+							$pixel.removeClass('black');
+						}
+						window.pixelBuffer.push({ x: pixel_x, y: pixel_y, colour: window.paintColour });
+					}
+				}
+				socket.on('update', function(canvas) {
+					for (var i = 0; i < canvas.length; i++) {
+						var pixel_x = i % numPixelsAcross;
+						var pixel_y = Math.floor(i / numPixelsAcross);
+						var $row = $('.canvas-row').eq(pixel_y);
+						var $pixel = $row.find('.canvas-pixel').eq(pixel_x);
+						if (canvas[i] == 1) {
+							$pixel.addClass('black');
+						} else {
+							$pixel.removeClass('black');
+						}
+					}
+				});
+				var sendPixelBuffer = function() {
+					if (window.pixelBuffer.length) {
+						var json = { pixels: window.pixelBuffer };
+						socket.emit('paint', json);
+						window.pixelBuffer = [];
+					}
+					window.sendPixelBufferTimeout = setTimeout(sendPixelBuffer, 1000);
+				}
+				sendPixelBuffer();
+			});
+		</script>
+	</body>
+</html>
