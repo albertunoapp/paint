@@ -231,7 +231,7 @@
 					var canvas_height = $('.canvas').height();
 					var pixel_width = $('.canvas-pixel').outerWidth();
 					var pixel_height = $('.canvas-pixel').outerHeight();
-					if (x <= canvas_width && y <= canvas_height) {
+					if (x <= canvas_width && y <= canvas_height && x >= 0 && y >= 0) {
 						var pixel_x = Math.floor(x / pixel_width);
 						var pixel_y = Math.floor(y / pixel_height);
 						var $row = $('.canvas-row').eq(pixel_y);
