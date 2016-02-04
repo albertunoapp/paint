@@ -31,8 +31,14 @@
 			.canvas-pixel.black {
 				background-color: #000;
 			}
+			.canvas-pixel.red {
+				background-color: #b00;
+			}
+			.canvas-pixel.blue {
+				background-color: #00d;
+			}
 			.grid {
-				background-color: #000;
+				background-color: #333;
 				color: #fff;
 				padding: 20px 40px;
 				font-family: Arial, sans-serif;
@@ -52,9 +58,40 @@
 				display: inline-block;
 				margin-top: 20px;
 				margin-left: 20px;
+				border: 1px solid transparent;
 			}
 			.pencil.active {
 				background-color: #000;
+			}
+			.pencil2 {
+				background-color: #999;
+				color: #fff;
+				padding: 20px 40px;
+				font-family: Arial, sans-serif;
+				font-size: 14px;
+				cursor: pointer;
+				display: inline-block;
+				margin-top: 20px;
+				margin-left: 20px;
+				border: 1px solid transparent;
+			}
+			.pencil2.active {
+				background-color: #b00;
+			}
+			.pencil3 {
+				background-color: #999;
+				color: #fff;
+				padding: 20px 40px;
+				font-family: Arial, sans-serif;
+				font-size: 14px;
+				cursor: pointer;
+				display: inline-block;
+				margin-top: 20px;
+				margin-left: 20px;
+				border: 1px solid transparent;
+			}
+			.pencil3.active {
+				background-color: #00d;
 			}
 			.eraser {
 				background-color: #999;
@@ -66,12 +103,15 @@
 				display: inline-block;
 				margin-top: 20px;
 				margin-left: 20px;
+				border: 1px solid transparent;
 			}
 			.eraser.active {
-				background-color: #000;
+				background-color: #fff;
+				color: #000;
+				border: 1px solid #999;
 			}
 			.clear {
-				background-color: #b00;
+				background-color: #333;
 				color: #fff;
 				padding: 20px 40px;
 				font-family: Arial, sans-serif;
@@ -85,10 +125,13 @@
 	</head>
 	<body>
 		<div class="canvas"></div>
-		<div class="grid">Toggle Grid</div>
-		<div class="pencil active">Pencil</div>
+		<div class="pencil active">Black</div>
+		<div class="pencil2">Red</div>
+		<div class="pencil3">Blue</div>
 		<div class="eraser">Eraser</div>
-		<div class="clear">Clear</div>
+		<br>
+		<div class="grid">Toggle Grid</div>
+		<div class="clear">CLEAR</div>
 		<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
 		<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 		<script>
@@ -116,6 +159,16 @@
 					window.paintColour = 1;
 					$('.active').removeClass('active');
 					$('.pencil').addClass('active');
+				});
+				$('.pencil2').click(function() {
+					window.paintColour = 2;
+					$('.active').removeClass('active');
+					$('.pencil2').addClass('active');
+				});
+				$('.pencil3').click(function() {
+					window.paintColour = 3;
+					$('.active').removeClass('active');
+					$('.pencil3').addClass('active');
 				});
 				$('.eraser').click(function() {
 					window.paintColour = 0;
@@ -160,32 +213,14 @@
 						var y = initY + (diffY * (i / pointsDistance));
 						if (lastX != x || lastY != y) {
 							if (window.paintColour == 0) {
-								paintPixel(x, y+10);
-								paintPixel(x, y-10);
-								paintPixel(x+10, y);
-								paintPixel(x-10, y);
-								paintPixel(x, y+20);
-								paintPixel(x, y-20);
-								paintPixel(x+20, y);
-								paintPixel(x-20, y);
-								paintPixel(x+10, y+10);
-								paintPixel(x-10, y-10);
-								paintPixel(x+10, y-10);
-								paintPixel(x-10, y+10);
-								paintPixel(x+20, y+20);
-								paintPixel(x-20, y-20);
-								paintPixel(x+20, y-20);
-								paintPixel(x-20, y+20);
-								paintPixel(x+10, y+20);
-								paintPixel(x-10, y-20);
-								paintPixel(x+10, y-20);
-								paintPixel(x-10, y+20);
-								paintPixel(x+20, y+10);
-								paintPixel(x-20, y-10);
-								paintPixel(x+20, y-10);
-								paintPixel(x-20, y+10);
+								for (var a = -20; a < 20; a += 10) {
+									for (var b = -20; b < 20; b += 10) {
+										paintPixel(x + a, y + b);
+									}
+								}
+							} else {
+								paintPixel(x, y);
 							}
-							paintPixel(x, y);
 						}
 						lastX = x;
 						lastY = y;
@@ -201,10 +236,15 @@
 						var pixel_y = Math.floor(y / pixel_height);
 						var $row = $('.canvas-row').eq(pixel_y);
 						var $pixel = $row.find('.canvas-pixel').eq(pixel_x);
+						$pixel.removeClass('black');
+						$pixel.removeClass('blue');
+						$pixel.removeClass('red');
 						if (window.paintColour == 1) {
 							$pixel.addClass('black');
-						} else if (window.paintColour == 0) {
-							$pixel.removeClass('black');
+						} else if (window.paintColour == 2) {
+							$pixel.addClass('red');
+						} else if (window.paintColour == 3) {
+							$pixel.addClass('blue');
 						}
 						window.pixelBuffer.push({ x: pixel_x, y: pixel_y, colour: window.paintColour });
 					}
@@ -215,10 +255,16 @@
 						var pixel_y = Math.floor(i / numPixelsAcross);
 						var $row = $('.canvas-row').eq(pixel_y);
 						var $pixel = $row.find('.canvas-pixel').eq(pixel_x);
+
+						$pixel.removeClass('black');
+						$pixel.removeClass('blue');
+						$pixel.removeClass('red');
 						if (canvas[i] == 1) {
 							$pixel.addClass('black');
-						} else {
-							$pixel.removeClass('black');
+						} else if (canvas[i] == 2) {
+							$pixel.addClass('red');
+						} else if (canvas[i] == 3) {
+							$pixel.addClass('blue');
 						}
 					}
 				});

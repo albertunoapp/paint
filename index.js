@@ -41,6 +41,10 @@ io.on('connection', function(socket) {
 						canvas[index] = 0;
 					} else if (pixel.colour == 1) {
 						canvas[index] = 1;
+					} else if (pixel.colour == 2) {
+						canvas[index] = 2;
+					} else if (pixel.colour == 3) {
+						canvas[index] = 3;
 					}
 				}
 			}
